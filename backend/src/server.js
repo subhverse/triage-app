@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const symptomRoutes = require("./routes/symptomRoutes");
+const historyRoutes = require("./routes/historyRoutes");
 
 let triageRoutes;
 try {
@@ -43,6 +44,7 @@ app.use(cookieParser());
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/symptoms", symptomRoutes);
+app.use("/triage", historyRoutes);
 
 if (triageRoutes) app.use("/triage", triageRoutes);
 
