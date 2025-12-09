@@ -35,9 +35,19 @@ exports.login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    // ================================
+    // SET HTTP-ONLY COOKIE
+    // ================================
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,       // true only in production (HTTPS)
+      sameSite: "lax",     // DEV MODE SAFE (no SameSite=None issues)
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    // Response (no token needed in JSON anymore)
     return res.json({
-      message: "Login successful",
-      token
+      message: "Login successful"
     });
 
   } catch (err) {

@@ -2,52 +2,64 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
-// routes (only require routes that exist in your project)
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-// If you have triageRoutes file, require it; if not, comment the next line
+const symptomRoutes = require("./routes/symptomRoutes");
+
 let triageRoutes;
 try {
   triageRoutes = require("./routes/triageRoutes");
 } catch (e) {
   triageRoutes = null;
-  // console.log("triageRoutes not found — skipping");
 }
 
 const app = express();
 
+// =======================
+// CORS for COOKIE AUTH
+// =======================
+app.use((req, res, next) => {
+  const origin = req.headers.origin;   // Allow ANY frontend port in dev
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-// ===== CORS =====
-// set the origin to the Vite dev server you are using (5173 or 5177).
-// If you aren't sure, check the frontend terminal and set that value.
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5177";
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
-app.use(cors({
-  origin: FRONTEND_ORIGIN,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true
-}));
-
-// ===== Body parser =====
+// =======================
+// Parsers
+// =======================
 app.use(express.json());
+app.use(cookieParser());
 
-// ===== Routes =====
+// =======================
+// Routes
+// =======================
 app.use("/auth", authRoutes);
+app.use("/user", userRoutes);
+app.use("/symptoms", symptomRoutes);
+
 if (triageRoutes) app.use("/triage", triageRoutes);
 
-app.use("/user", userRoutes);
-
-// simple health check
+// Health check
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// ===== Start =====
+// =======================
+// Start Server
+// =======================
 const start = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("MongoDB connected");
-    app.listen(process.env.PORT || 4000, () => console.log("Server running on port", process.env.PORT || 4000));
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () =>
+      console.log("Server running on port", PORT)
+    );
   } catch (err) {
     console.error("Failed to start:", err.message);
     process.exit(1);
