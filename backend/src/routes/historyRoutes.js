@@ -4,13 +4,12 @@ const router = express.Router();
 const auth = require("../middleware/auth");
 const TriageLog = require("../models/triageLog");
 
-// GET /triage/history
-router.get("/history", auth, async (req, res) => {
+// GET /history  (router mounted at /history in server.js)
+router.get("/", auth, async (req, res) => {
   try {
     const logs = await TriageLog.find({ userId: req.userId })
       .sort({ createdAt: -1 })
       .lean();
-
     res.json(logs);
   } catch (err) {
     console.error("History error:", err);

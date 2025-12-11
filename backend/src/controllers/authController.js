@@ -16,7 +16,14 @@ const loginSchema = Joi.object({
   password: Joi.string().min(6).max(128).required(),
 });
 
-exports.register = async (req, res) => {
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production", // requires HTTPS in prod
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+};
+
+exports.register = async (req, res, next) => {
   try {
     const { error, value } = registerSchema.validate(req.body, { abortEarly: false });
     if (error) {
@@ -34,12 +41,12 @@ exports.register = async (req, res) => {
 
     return res.status(201).json({ message: "User registered", userId: user._id });
   } catch (err) {
-    console.error("register error:", err);
-    return res.status(500).json({ error: err.message });
+    // pass to central error handler
+    next(err);
   }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
     const { error, value } = loginSchema.validate(req.body, { abortEarly: false });
     if (error) {
@@ -57,17 +64,12 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    // Set httpOnly cookie (dev settings)
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    // Set httpOnly cookie with production-safe options
+    res.cookie("token", token, cookieOptions);
 
     return res.json({ message: "Login successful" });
   } catch (err) {
-    console.error("login error:", err);
-    return res.status(500).json({ error: err.message });
+    // pass to central error handler
+    next(err);
   }
 };
